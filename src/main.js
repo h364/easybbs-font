@@ -16,5 +16,8 @@ app.use(router)
 app.use(ElementPlus)
 
 app.config.globalProperties.VueCookies = VueCookies
+app.config.globalProperties.GlobalInfo = {
+    bodyWidth: 1300,
+}
 
 app.mount('#app')

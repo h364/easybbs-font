@@ -1,5 +1,5 @@
 <template>
-  
+  <router-view></router-view>
 </template>
 
 <script setup>
@@ -7,6 +7,6 @@
 
 </script>
 
-<style lang="less" scoped>
+<style lang="scss" scoped>
 
 </style>
