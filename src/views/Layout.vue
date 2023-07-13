@@ -18,28 +18,24 @@
                         </el-button>
                     </div>
                     <el-button-group :style="{'margin-left': 10 +'px'}">
-                        <el-button type="primary" plain>登录</el-button>
-                        <el-button type="primary" plain>注册</el-button>
+                        <el-button type="primary" plain @click="loginAndRegister(1)">登录</el-button>
+                        <el-button type="primary" plain @click="loginAndRegister(0)">注册</el-button>
                     </el-button-group>
                 </div>
             </div>
         </div>
         <div>
-            <div style="height: 200px; background: #3285FF;">1</div>
-            <div style="height: 200px; background: #FB3624;">2</div>
-            <div style="height: 200px; background: #FFBA02;">3</div>
-            <div style="height: 200px; background: #3285FF;">4</div>
-            <div style="height: 200px; background: #25B24E;">5</div>
-            <div style="height: 200px; background: #3285FF;">5</div>
-            <div style="height: 200px; background: #FFBA02;">5</div>
-            <!-- <router-view></router-view> -->
+            <router-view></router-view>
         </div>
+        <LoginAndRegister ref="loginRegisterRef"></LoginAndRegister>
     </div>
 </template>
 
 <script setup>
     import { ref, getCurrentInstance, onMounted } from "vue"
     import { useRouter, useRoute } from 'vue-router'
+
+    import LoginAndRegister from '@/views/LoginAndRegister.vue'
 
     const { proxy } = getCurrentInstance()
     const router = useRouter
@@ -76,6 +72,7 @@
         },
     ])
     const showHeader = ref(true)
+    const loginRegisterRef = ref()
 
     const getScrollTop = () => {
         let scrollTop = document.documentElement.scrollTop || window.pageYOffset || document.body.scrollTop
@@ -99,6 +96,10 @@
                 showHeader.value = true
             }
         })
+    }
+
+    const loginAndRegister = (type) => {
+        loginRegisterRef.value.showPanel(type)
     }
 
     onMounted(() => {
