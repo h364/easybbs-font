@@ -1,7 +1,7 @@
 <template>
     <Dialog :show="dialogConfig.show" :title="dialogConfig.title" :showCancel="false" :buttons="dialogConfig.buttons"
-        width="400px" @close="close">
-        <div class="loginPanel">
+        width="400px" @close="loginAndRegisterClose">
+        <div class="loginAndRegisterPanel">
             <el-form class="login-register" :model="formdata" :rules="rules" ref="formdataRef">
                 <!-- 邮箱输入 -->
                 <el-form-item prop="email">
@@ -82,14 +82,14 @@
                         <el-checkbox v-model="formdata.rememberMe">记住我</el-checkbox>
                     </div>
                     <div class="no-account">
-                        <a href="javascript:void(0)" style="color: #007fff;" @click="changeOpType(1)"
-                            v-if="opType == 0">忘记密码?</a>
-                        <a href="javascript:void(0)" style="color: #007fff;" @click="changeOpType(0)"
-                            v-if="opType == 1">去登录?</a>
-                        <a href="javascript:void(0)" style="color: #007fff;" @click="changeOpType(2)"
-                            v-if="opType == 0">没有账号?</a>
-                        <a href="javascript:void(0)" style="color: #007fff;" @click="changeOpType(0)"
-                            v-if="opType == 2">已有账号?</a>
+                        <a href="javascript:void(0)" style="color: #007fff; text-decoration: none;"
+                            @click="changeOpType(1)" v-if="opType == 0">忘记密码?</a>
+                        <a href="javascript:void(0)" style="color: #007fff; text-decoration: none;"
+                            @click="changeOpType(0)" v-if="opType == 1">去登录?</a>
+                        <a href="javascript:void(0)" style="color: #007fff; text-decoration: none;"
+                            @click="changeOpType(2)" v-if="opType == 0">没有账号?</a>
+                        <a href="javascript:void(0)" style="color: #007fff; text-decoration: none;"
+                            @click="changeOpType(0)" v-if="opType == 2">已有账号?</a>
                     </div>
                 </el-form-item>
                 <!-- 登录按钮 -->
@@ -102,21 +102,57 @@
                 </el-form-item>
             </el-form>
         </div>
+        <Dialog :show="dialogEmailConfig.show" :title="dialogEmailConfig.title" :showCancel="true"
+            :buttons="dialogEmailConfig.buttons" width="500px" @close="emailDialogClose">
+            <el-form :model="formdata">
+                <el-form-item label="邮箱" label-width="80px">
+                    <el-input v-model="formdata.email" disabled="true" size="large" style="width: 300px;">
+                        <template #prefix>
+                            <span class="iconfont icon-account"></span>
+                        </template>
+                    </el-input>
+                </el-form-item>
+                <el-form-item label="验证码" label-width="80px">
+                    <el-input size="large" placeholder="请输入验证码" v-model="emailCodeData.checkCode" style="width: 150px;">
+                        <template #prefix>
+                            <span class="iconfont icon-checkcode"></span>
+                        </template>
+                    </el-input>
+                    <img :src="checkCodeUrlEmail" alt="" @click="changeCheckCode(1)" class="checkCode"
+                        style="margin-left: 20px;">
+                </el-form-item>
+            </el-form>
+        </Dialog>
     </Dialog>
 </template>
 
 <script setup>
-    import { ref, getCurrentInstance } from "vue"
+    import { ref, getCurrentInstance, onMounted, nextTick } from "vue"
+    import md5 from 'js-md5'
 
     const { proxy } = getCurrentInstance()
 
     const formdata = ref({})
     const formdataRef = ref()
+    const emailCodeData = ref({})
     const checkCodeUrl = ref("/api/user/checkCode")
     const checkCodeUrlEmail = ref("/api/user/checkCode")
     const dialogConfig = ref({
         show: false,
         title: "登录",
+    })
+    const dialogEmailConfig = ref({
+        show: false,
+        title: "发送邮箱验证码",
+        buttons: [
+            {
+                type: "primary",
+                text: "发送验证码",
+                click: () => {
+                    sendEmailCode()
+                }
+            }
+        ]
     })
     /* 表单校验规则 */
     const checkPassword = (rule, value, callback) => {
@@ -151,6 +187,7 @@
     const changeOpType = (type) => {
         opType.value = type
         formdataRef.value.resetFields()
+
         dialogConfig.value.title = type - 1 > 0 ? "注册" : "重置密码"
         if (type == 0) {
             dialogConfig.value.title = "登录"
@@ -159,11 +196,150 @@
     }
 
     const showPanel = (type) => {
+        opType.value = type
+        if (type == 0) {
+            dialogConfig.value.title = "登录"
+        } else if (type == 2) {
+            dialogConfig.value.title = "注册"
+        }
         dialogConfig.value.show = true
+        nextTick(() => {
+            formdataRef.value.resetFields()
+            if (type == 0) {
+                const cookieLoginInfo = proxy.VueCookies.get("loginInfo")
+                if (cookieLoginInfo != null) {
+                    formdata.value = cookieLoginInfo
+                }
+            }
+        })
     }
 
-    const close = () => {
+    const getEmailCode = () => {
+        formdataRef.value.validateField("email", (validate) => {
+            if (validate) {
+                dialogEmailConfig.value.show = true
+                changeCheckCode(1)
+            } else {
+                return
+            }
+        })
+    }
+
+    const sendEmailCode = async () => {
+        if (!!emailCodeData.value.checkCode) {
+            let result = await proxy.Request({
+                url: '/user/sendEmailCode',
+                params: {
+                    email: formdata.value.email,
+                    checkCode: emailCodeData.value.checkCode,
+                    type: opType == 2 ? 2 : 1
+                },
+                errorCallback: () => {
+                    changeCheckCode(1)
+                }
+            })
+            if (!result) {
+                return
+            }
+            proxy.Message.success("验证码发送成功，请登录邮箱查看")
+            dialogFormVisible.value = false
+            emailCodeData.value = {}
+        } else {
+            proxy.Message.error("验证码不能为空")
+        }
+    }
+
+    const loginOrUpdateOrRegister = () => {
+        formdataRef.value.validate((validate) => {
+            if (validate) {
+                if (opType.value == 0) {
+                    login()
+                } else if (opType.value == 1) {
+                    updatePassword()
+                } else if (opType.value == 2) {
+                    register()
+                }
+            }
+        })
+    }
+
+    const login = async () => {
+        console.log(formdata.value.rememberMe);
+        let result = await proxy.Request({
+            url: '/user/login',
+            params: {
+                email: formdata.value.email,
+                password: md5(formdata.value.password),
+                checkCode: formdata.value.checkCode
+            },
+            errorCallback: () => {
+                changeCheckCode(1)
+            }
+        })
+        if (!result) {
+            return
+        }
+        //proxy.VueCookies.set("userInfo", result.data, 0)
+        const loginInfo = {
+            email: formdata.value.email,
+            password: formdata.value.password,
+            rememberMe: formdata.value.rememberMe
+        }
+
+        if (formdata.value.rememberMe) {
+            proxy.VueCookies.set("loginInfo", loginInfo, "7d")
+        }
+        proxy.Message.success("登录成功")
+        //router.push("/")
+        formdataRef.value.resetFields()
+    }
+
+    const register = async () => {
+        let result = await proxy.Request({
+            url: '/user/register',
+            params: {
+                email: formdata.value.email,
+                emailCode: formdata.value.emailCode,
+                nickname: formdata.value.nickname,
+                password: formdata.value.registPassword,
+                checkCode: formdata.value.checkCode
+            },
+            errorCallback: () => {
+                changeCheckCode(1)
+            }
+        })
+        if (!result) {
+            return
+        }
+        proxy.Message.success("注册成功")
+        formdataRef.value.resetFields()
+    }
+
+    const updatePassword = async () => {
+        let result = await proxy.Request({
+            url: '/user/resetPwd',
+            params: {
+                email: formdata.value.email,
+                emailCode: formdata.value.emailCode,
+                password: formdata.value.registPassword,
+                checkCode: formdata.value.checkCode
+            },
+            errorCallback: () => {
+                changeCheckCode(1)
+            }
+        })
+        if (!result) {
+            return
+        }
+        proxy.Message.success("密码修改成功")
+    }
+
+    const loginAndRegisterClose = () => {
         dialogConfig.value.show = false
+    }
+
+    const emailDialogClose = () => {
+        dialogEmailConfig.value.show = false
     }
 
     defineExpose({

@@ -18,8 +18,8 @@
                         </el-button>
                     </div>
                     <el-button-group :style="{'margin-left': 10 +'px'}">
-                        <el-button type="primary" plain @click="loginAndRegister(1)">登录</el-button>
-                        <el-button type="primary" plain @click="loginAndRegister(0)">注册</el-button>
+                        <el-button type="primary" plain @click="loginAndRegister(0)">登录</el-button>
+                        <el-button type="primary" plain @click="loginAndRegister(2)">注册</el-button>
                     </el-button-group>
                 </div>
             </div>
