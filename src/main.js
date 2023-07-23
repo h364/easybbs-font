@@ -11,6 +11,7 @@ import 'element-plus/dist/index.css'
 import '@/assets/icon/iconfont.css'
 
 import Dialog from '@/components/Dialog.vue'
+import Avatar from '@/components/Avatar.vue'
 
 import Verify from '@/utiles/Verify.js'
 import Confirm from '@/utiles/Confirm.js'
@@ -23,6 +24,7 @@ app.use(router)
 app.use(ElementPlus)
 
 app.component("Dialog", Dialog)
+app.component("Avatar", Avatar)
 
 app.config.globalProperties.Verify = Verify
 app.config.globalProperties.Confirm = Confirm

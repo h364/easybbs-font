@@ -181,7 +181,6 @@
         } else {
             checkCodeUrlEmail.value = checkCodeUrlEmail.value + "?type=" + type + "&time=" + new Date().getTime()
         }
-
     }
 
     const changeOpType = (type) => {

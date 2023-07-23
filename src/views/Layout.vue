@@ -5,7 +5,21 @@
                 <router-link to="/" class="logo a-link">
                     <span v-for="item in logoInfo" :style="{color: item.color}">{{item.letter}}</span>
                 </router-link>
-                <div class="menu-panel"></div>
+                <div class="menu-panel">
+                    <span class="menu-item">全部</span>
+                    <template v-for="board in boardList">
+                        <el-popover placement="bottom-start" title="标题" width="300" trigger="hover"
+                            v-if="board.children.length>0">
+                            <template #reference>
+                                <span class="menu-item">{{board.boardName}}</span>
+                            </template>
+                            <div class="sub-board-list">
+                                <span class="sub-board" v-for="subBoard in board.children">{{subBoard.boardName}}</span>
+                            </div>
+                        </el-popover>
+                        <span class="menu-item" v-else>{{board.boardName}}</span>
+                    </template>
+                </div>
                 <div class="user-info-panel">
                     <div class="op-btn">
                         <el-button type="primary" class="op-btn">
@@ -24,7 +38,7 @@
                 </div>
             </div>
         </div>
-        <div>
+        <div class="body-content">
             <router-view></router-view>
         </div>
         <LoginAndRegister ref="loginRegisterRef"></LoginAndRegister>
@@ -32,10 +46,10 @@
 </template>
 
 <script setup>
+    import LoginAndRegister from '@/views/LoginAndRegister.vue'
+
     import { ref, getCurrentInstance, onMounted } from "vue"
     import { useRouter, useRoute } from 'vue-router'
-
-    import LoginAndRegister from '@/views/LoginAndRegister.vue'
 
     const { proxy } = getCurrentInstance()
     const router = useRouter
@@ -73,6 +87,7 @@
     ])
     const showHeader = ref(true)
     const loginRegisterRef = ref()
+    const boardList = ref([])
 
     const getScrollTop = () => {
         let scrollTop = document.documentElement.scrollTop || window.pageYOffset || document.body.scrollTop
@@ -90,12 +105,22 @@
                 scrollType = 0
             }
             initScrollTop = currentScrollTop
-            if(scrollType == 1 && currentScrollTop > 100) {
+            if (scrollType == 1 && currentScrollTop > 100) {
                 showHeader.value = false
-            }else{
+            } else {
                 showHeader.value = true
             }
         })
+    }
+
+    const loadBoard = async () => {
+        let result = await proxy.Request({
+            url: 'board/loadBoard'
+        })
+        if (!result) {
+            return
+        }
+        boardList.value = result.data
     }
 
     const loginAndRegister = (type) => {
@@ -104,6 +129,7 @@
 
     onMounted(() => {
         initScroll()
+        loadBoard()
     })
 </script>
 
@@ -139,6 +165,10 @@
                 .menu-item {
                     margin-left: 20px;
                     cursor: pointer;
+
+                    &:hover {
+                        color: var(--link);
+                    }
                 }
 
                 .home {
